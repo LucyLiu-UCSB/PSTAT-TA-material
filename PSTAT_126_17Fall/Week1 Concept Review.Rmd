@@ -1,31 +1,55 @@
 ---
-title: "Week1 Concept Review"
+title: "Week1 Concepts Review"
 author: "xiliu"
 date: "10/1/2017"
-output: html_document
-
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+# Sampling Distributions
 
-## R Markdown
+* **Definition:** The random variables $Y_1, Y_2,\ldots , Y_n$ are observed in a random sample selected from a population of interest. Certain functions of $Y_1, Y_2,\ldots , Y_n$ are called statistics. All statistics have probability distributions, which we will call their *sampling distributions*.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+* **Example:** If $Y_1, Y_2,\ldots , Y_n$ are from $N(\mu, \sigma^2)$, then sample mean defined as
+$$\bar{Y}=\frac{1}{n}\sum_{i=1}^nY_i$$
+is normally distributed. The *sampling distribution* of $\bar{Y}$ is $N(\mu,\frac{\sigma^2}{n})$.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Based on the sampling distribution of statistics, we can make *statistical inference* on population parameters. Statistical inference includes *hypothesis testing* and *estimation* of the population parameters. Further, estimation includes *point estimation* ($\bar{Y}$ is a point estimation of $\mu$) and *interval estimation* (confidence interval calculation). Therefore, only if we know the sampling distribution of certain statistics, we can use these statistics to develop hypothesis testing and confidence intervals.
 
-```{r cars}
-summary(cars)
-```
+# Hypothesis Testing
+**Example: **One sample mean test. 
 
-## Including Plots
+If $X_1,X_2,\ldots,X_n$ come from $N(\mu, \sigma^2)$, where $\sigma^2$ is a known constant. We are going to make inference on $\mu$. Use significance level $\alpha=0.05$.
 
-You can also embed plots, for example:
+* Null and alternative hypothesis: the hypothesis to be tested, called the null hypothesis and denoted
+by $H_0$. $H_a$ is the hypothesis to be accepted in case $H_0$ is rejected.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+$$H_0: \mu=5\quad \text{ v.s. }\quad H_a:\mu\neq5$$
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+* Test statistic: is a function of the sample measurements ($X_i's$ in our example) on which the statistical decision will be based. In our example, $z-$statistic is 
+
+$$Z=\frac{\bar{X}-\mu}{\sigma/\sqrt{n}}.$$
+
+* Null distribution: the sampling distribution of test statistic under null hypothesis $H_0$. In our example, $Z\sim N(0,1)$.
+
+* P-value: is defined as the probability, under the null hypothesis $H_0$, of obtaining a result equal to or more extreme than what was actually observed. If observed value of $Z$ is $z=2$, then P-value in this example is 
+$$\text{P-value}=2\times P(Z>z)=2\times P(Z>2)=0.0455.$$
+If P-value is less then $\alpha$, reject null hypothesis. So in this example, we reject $H_0$ because $\text{P-value}=0.0455<\alpha=0.05$.
+
+* Critical value: specifies the values of the test statistic for which the null hypothesis is to be rejected in favor of the alternative hypothesis.  
+When $\alpha=0.05$, the critical value for two-sided mean test in this example is 1.96 and -1.96. Therefore, if observed $Z$ is 2, we reject null hypothesis. 
+
+
+# Confidence Intervals
+
+ Confidence intervals are interval estimates of the unknown parameter which can be constructed from point estimates. In our example,  a two-sided confidence
+interval for $\mu$ with confidence level $1 − \alpha=95\%$ is given by 
+$$(\bar{X}-1.96*\sigma/\sqrt{n},\bar{X}+1.96*\sigma/\sqrt{n}).$$
+
+
+* Confidence level: is the frequency (i.e., the proportion) of possible confidence intervals that contain the true value of their corresponding parameter.
+
+
+ 

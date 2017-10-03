@@ -30,7 +30,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ## Download and install RStudio
 * Go to <http://www.rstudio.com> 
 * Click on [RStudio Download](https://www.rstudio.com/products/rstudio/download/)
-* Choose the first one, RStudio Deskto Open Source License, click on `DOWNLOAD`
+* Choose the first one, RStudio Desktop Open Source License, click on `DOWNLOAD`
 * Choose the Installers for Supported Platforms and download the RStudio
 * Follow the installer in steps to install R
 
@@ -42,14 +42,14 @@ The capabilities of R are extended through user-created `packages`.  If you want
 ```{r,eval=FALSE}
 ############          install packages   # only one time             ############
 install.packages("knitr") # R Markdown package
-install.packages("alr4") # Course datasets used in homework
-install.packages("faraway") # Course datasets used in homework
+install.packages("alr4") # Contains course datasets used in homeworks
+install.packages("faraway") # Contains course datasets used in homeworks
 ############                      require packages                   ############
 library(knitr)
 library(alr4)
 library(faraway)
 ```
-# R basics
+# R basics---1 Objects and indexing
 
 ## Objects in R
 
@@ -68,7 +68,7 @@ matrix.example
 ```
 
 * Lists-*recursive* structure. These are ordered sequences of objects which individually can be of any mode.  
-An special case of list is `data.frame`, which requires all columns whould have the same length.
+A special case of list is `data.frame`, which requires all columns should have the same length.
 ```{r}
 list.example<-list(language=c("R","Matlab","Python","JAVA"),
                    OpenOrNot=c(TRUE,FALSE,TRUE), # this colume only has three elements.
@@ -101,16 +101,45 @@ data.frame.example$OpenOrNot # in data.frame, each column has a name, get the ve
 
 # R markdown basics
 
-More about R Markdown, please visit <http://rmarkdown.rstudio.com/lesson-1.html>.
+More about R Markdown, please visit <http://rmarkdown.rstudio.com/lesson-1.html>.  
+Learn R Markdown in 10 mins, please read R Markdown Cheat Sheet.
 
-## Workflow 
+## R Markdown Workflow 
 
 1. Open a new .Rmd file.
-2. Write document(define the format, for example, make your homework contain a content).
-3. Knit document to create report(For your homework, choose PDF document and you will get a PDF file alongside .Rmd).
+2. Write document (define the format, for example, make your homework contain a content).
+3. Knit document to create report (For your homework, choose PDF document and you will get a PDF file alongside .Rmd).
 
-## Text and Code chunks
+## R Markdown syntax
 
 ### Basic Markdown language
 
+| write the syntax|create effect|
+| :---------------|:-----------------|
+|`Plain text`| Plain text|
+|`*italics* and **bold** `|*italics* and **bold** |
+|`verbatim code` |`verbatim code` |
+|Equation `$S=\pi*r^2$`|$S=\pi*r^2$|
+|`# Header `| First header (like 4 R markdown basics) |
+|`## Header`| Second header (like 4.2 Markdown syntax)|
+|Link `<http://www.rstudio.com>` |<http://www.rstudio.com> |
+|unordered list| check source code in 1.1 Download and install R|
+|ordered list|check source code in 4.1 Workflow|
+
 ### Code chunks options
+` ```{r ChunkName, cache=TURE, echo=TRUE, message=FALSE}`  
+` R code in chunks`  
+` ``` `
+
+
+| write the syntax|create effect|
+| :---------------|:-----------------|
+|cache |Cache results for future knits |
+|echo | Display code in output document|
+|eval | Run code in chunk (default = TRUE)|
+|message | Display code messages in document (default = TRUE)|
+|warning | Display code warnings in document (default = TRUE)|
+|fig.align | 'lef', 'right', or 'center' (default= 'default')|
+|fig.height, fig.width | Dimensions of plots in inches |
+
+
