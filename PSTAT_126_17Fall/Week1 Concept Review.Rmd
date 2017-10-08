@@ -36,7 +36,7 @@ $$Z=\frac{\bar{X}-\mu}{\sigma/\sqrt{n}}.$$
 
 * P-value: is defined as the probability, under the null hypothesis $H_0$, of obtaining a result equal to or more extreme than what was actually observed. If observed value of $Z$ is $z=2$, then P-value in this example is 
 $$\text{P-value}=2\times P(Z>z)=2\times P(Z>2)=0.0455.$$
-If P-value is less then $\alpha$, reject null hypothesis. So in this example, we reject $H_0$ because $\text{P-value}=0.0455<\alpha=0.05$.
+If P-value is less than $\alpha$, reject null hypothesis. So in this example, we reject $H_0$ because $\text{P-value}=0.0455<\alpha=0.05$.
 
 * Critical value: specifies the values of the test statistic for which the null hypothesis is to be rejected in favor of the alternative hypothesis.  
 When $\alpha=0.05$, the critical value for two-sided mean test in this example is 1.96 and -1.96. Therefore, if observed $Z$ is 2, we reject null hypothesis. 

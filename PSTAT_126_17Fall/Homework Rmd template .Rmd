@@ -1,0 +1,25 @@
+---
+title: "PSTAT 126 HW Template"
+author: "Your name"
+date: "10/8/2017"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,fig.align = "center")
+```
+
+# First header
+
+Pls leave a blank line before the headers.
+
+## Second header 
+
+```{r} 
+## Code chunk like this
+plot(rnorm(100),pch=16,col=2,main="Give a name",xlab="change name of X axis",
+     ylab="change name of Y axis")
+```
