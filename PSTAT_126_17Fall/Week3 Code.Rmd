@@ -1,0 +1,77 @@
+---
+title: "Week3 Code"
+author: "Lucy Liu"
+date: "10/17/2017"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,fig.align = "center")
+```
+
+# Questions in Homework 2 
+```{r}
+library(faraway)
+linear.model<-lm(gamble ~ income, data = teengamb) # simple regression case
+summary(linear.model)
+```
+## 2(c) Information in Summary 
+
+* estimate of $\sigma^2$: $\hat{\sigma^2}=24.95^2$.
+* estimated standard errors of $\beta_0$ and $\beta_1$: 6.030 and 1.036.
+* t-test for $H_0: \beta_0=0$, $t_{obs}=-1.049$, P-value = 0.3.
+* t-test for $H_0: \beta_1=0$, $t_{obs}= 5.330$, P-value = 3.05e-06.
+```{r}
+vcov(linear.model)
+```
+
+* estimated covariance between these two estimates $\hat{\beta}_0$ and $\hat{\beta}_1$ is -4.98.
+
+## 3(c) $R^2$ explanation
+
+* $R^2$ coefficient is 0.387, which is also called the coefficient of determination.  
+Explanation: 38.7\% of the variation in gamble expenditure is 'explained by' the variation in predictor income.
+
+## 4(c) 99% prediction interval
+```{r}
+pointwise.mean<-predict(linear.model,newdata = data.frame(income=8),interval = "prediction",level = 0.99,se=T)
+pointwise.mean$fit
+```
+
+Then predicted value is 37.84, and 99% prediction interval is  (-30.61333, 106.292).
+
+# Simultaneous confidence intervals for mean response 
+
+## Bonferroni correction
+If we form $k$ confidence intervals with overall confidence level $100(1-\alpha)\%$, formulate each individual CI with level $100(1-\alpha/k)\%$.
+$$\hat{Y}(x_0)\pm t_{n-2, 1-\frac{\alpha}{2k}}SE(\hat{Y}(x_0))$$.
+```{r}
+CI.bonferroni<-predict(linear.model,newdata = data.frame(income=c(2,3,4,5)),level = 1-0.05/4,interval = "confidence",se=T)
+print(CI.bonferroni$fit[,2:3]) # Bonferroni CI, significence level for each CI is 0.05/4
+```
+
+
+## Scheffe's method
+
+Replace $t_{n-2,1-\frac{\alpha}{2}}$ with $\sqrt{2F_{2,n-2, 1-\alpha}}$, then
+$$\hat{Y}(x_0)\pm \sqrt{2F_{2,n-2, 1-\alpha}} SE(\hat{Y}(x_0))$$ is the $100(1-\alpha)\%$ simultaneous confidence band. It holds for $\forall x_0\in R$.
+```{r}
+n=nrow(teengamb)
+CI.normal<-predict(linear.model,newdata = data.frame(income=c(2,3,4,5)),level = 1-0.05,interval = "confidence",se=T)
+data.frame(lower.bound=c(CI.normal$fit[,1]-sqrt(2*qf(1-0.05,2,n-2))*CI.normal$se.fit),
+           upper.bound=c(CI.normal$fit[,1]+sqrt(2*qf(1-0.05,2,n-2))*CI.normal$se.fit))
+```
+
+
+# ANOVA for regression
+```{r}
+anova(linear.model)
+```
+* F statistic =  28.407 for testing: $H_0:\beta_1=0$.  
+
+***Note, in simple linear regression, F statistic =  28.407=t $\text{statistic}^2$ = $5.330^2$. And you get the same P-value for F test and t test, which are equivalent tests. But this is true only for simple linear regression.***
+
+* P-value =3.045e-06.
