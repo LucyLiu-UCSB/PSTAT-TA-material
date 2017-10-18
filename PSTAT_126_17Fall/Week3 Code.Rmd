@@ -37,8 +37,8 @@ Explanation: 38.7\% of the variation in gamble expenditure is 'explained by' the
 
 ## 4(c) 99% prediction interval
 ```{r}
-pointwise.mean<-predict(linear.model,newdata = data.frame(income=8),interval = "prediction",level = 0.99,se=T)
-pointwise.mean$fit
+pointwise.obs<-predict(linear.model,newdata = data.frame(income=8),interval = "prediction",level = 0.99,se=T)
+pointwise.obs$fit
 ```
 
 Then predicted value is 37.84, and 99% prediction interval is  (-30.61333, 106.292).
