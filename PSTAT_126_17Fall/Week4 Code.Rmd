@@ -1,0 +1,123 @@
+---
+title: "Week4 Code"
+author: "Lucy Liu"
+date: "10/24/2017"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,fig.align = "center"
+                      ,fig.height=10,fig.width=14)
+```
+
+
+
+# Residual Diagnostic plots 
+```{r}
+#################                 Simulated models              #################
+set.seed(20171025)
+x<-rnorm(n = 100, sd = 1, mean = seq(1,10,length.out = 100)) # predictor x
+### linear model statisfies four assumptions
+y.perfect<-1+2*x+rnorm(n=100,mean = 0,sd = 1)
+y.perfect_model<-lm(y.perfect~x)
+### quadratic model, i.e. violates linear assumption
+y.quadratic<-1+2*x+3*x^2+rnorm(n=100,mean = 0,sd = 1)
+y.quadratic_model<-lm(y.quadratic~x)
+### linear model with Var(epsilon_i)=f(x_i), i.e. violates constant assumption
+y.nonconstant.var<-1+2*x+rnorm(n=100,mean = 0,sd = x)
+y.nonconstant.var_model<-lm(y.nonconstant.var~x)
+### linear model with epsilon_i is t(2), i.e. violates normal assumption
+y.nonnormal.var<-1+2*x+rt(n = 100,df = 2)
+y.nonnormal.var_model<-lm(y.nonnormal.var~x)
+#################               scatter plot of y~x             #################
+par(mfrow=c(2,2))
+title<-c(expression(paste(y==1+2*x+epsilon, ", ",epsilon,"~" ,N(0,x^2)) ),
+         expression(paste(y==1+2*x+epsilon, ", ",epsilon,"~" ,"t(2)") ),
+         expression(paste(y==1+2*x+epsilon, ", ",epsilon,"~" ,"N(0,1)") ),
+         expression(paste(y==1+2*x+3*x^2+epsilon, ", ",epsilon,"~" ,"N(0,1)")))
+color<-c(3,4,1,2)
+plot(x, y.nonconstant.var, pch=16, col=color[1],main=title[1])
+plot(x, y.nonnormal.var,pch=16,col=color[2],main=title[2])
+plot(x, y.perfect, pch=16, col=color[3],main=title[3])
+plot(x, y.quadratic, pch=16, col=color[4],main=title[4])
+```
+
+## Residual vs. fitted
+* Check assumptions: $E(\varepsilon_i)=0 \text{ and } Var(\varepsilon_i)=\sigma^2$
+* Reasonable $e_i$ vs. $\hat{y_i}$ graph: should have mean zero and constant range.  
+We don't expect the variability of the residuals to change over the range of the dependent variable, so there shouldn't be any discernable pattern to this plot. 
+* Plots of the simulated cases are as followings.
+```{r}
+modelname.list<-grep("_model",x =ls(),value = T )
+model.list<-list()
+for (i in 1:length(modelname.list)){
+      model.list[[i]]<-get(modelname.list[i])
+}
+par(mfrow=c(2,2))
+for( i in 1:4) plot(model.list[[i]],which=1,col=color[i],caption =title[i])
+```
+
+## QQ plots
+* Check normality: $\varepsilon_i\sim N(0,\sigma^2)$
+* Reasonable QQ-plot: should follow a straight line. 
+* Plots of the simulated cases are as followings.
+```{r}
+par(mfrow=c(2,2))
+for (i in 1:4) plot(model.list[[i]],which = 2,col=color[i],main =title[i])
+```
+
+## Scale-location plots
+* Check assumptions: $E(\varepsilon_i)=0 \text{ and } Var(\varepsilon_i)=\sigma^2$
+* Reasonable $\sqrt{r_i}$ vs. $\hat{y_i}$ graph: should have mean zero and constant range, which is similar to the residuals versus fitted values plot.
+* Plots of the simulated cases are as followings.
+```{r}
+par(mfrow=c(2,2))
+for (i in 1:4) plot(model.list[[i]],which = 3,col=color[i],main =title[i])
+```
+
+# Box Cox transformation 
+```{r,fig.height=5,fig.width=8}
+### simulated model log(y)= 1+0.02*x+\epsilon
+set.seed(20171025)
+y.log<-exp(0.1+0.02*x+rnorm(100,sd=1))
+logY.model<-lm(y.log~x)
+library(car)
+logY.boxcox<-boxCox(logY.model)
+(lambda.opt = logY.boxcox$x[which.max(logY.boxcox$y)])
+```
+Though the optimal $\lambda$ is -0.06, the maximum likelihood estimate should be rounded to an interpretable value. Also, the  $\lambda$ value you choose should be in the confidence interval, i.e. within the dotted lines. For this example,  the best lambda is close to 0 and 0 is within the confidence interval, then choose the logarithm which is corresponds to when $\lambda$ is 0 in Boxcox transformation.
+
+# Exploratory analysis for  multiple linear regression
+
+## Scatterplot Matrix
+The scatterplot matrix can provide answers to the following questions:
+
+1. Are there pairwise relationships between the variables?
+2. If there are relationships, what is the nature of these relationships?
+3. Are there outliers in the data?
+```{r}
+library(faraway)
+colnames(teengamb)
+pairs(~status+income+verbal+gamble,data = teengamb) # do NOT include categorical variables!
+```
+
+## Added variable plots
+ 
+```{r}
+mul.model<-lm(gamble ~.,data = teengamb) # gamble is the expenditure on gambling in pounds per year
+avPlots(mul.model)
+summary(mul.model) # relate slopes of added variable plots with coefficients in the fitted model
+```
+
+**Interpretation of added variable plots:**
+
+For example, added variable plot for `income` (in pounds per week):
+
+* Regression `gamble` on all $x$ except `income` and get residuals $\hat{\delta}$. These represent `gamble` with the other $X$-effects taken out.
+* Regression `income` on all $x$ except `income` and get residuals $\hat{\gamma}$. These represent `income` with the other $X$-effects taken out.
+* The `added variable plot for income` shows $\hat{\delta}$ vs. $\hat{\delta}$.
+* Aim to look for nonlinear pattern, outliers.
+
+
