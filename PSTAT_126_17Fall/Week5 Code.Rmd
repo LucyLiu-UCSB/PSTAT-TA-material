@@ -1,0 +1,91 @@
+---
+title: "Week5 Code"
+author: "Lucy Liu"
+date: "10/31/2017"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,fig.align = "center"
+                      ,fig.height=10,fig.width=14)
+```
+
+# Homework formatting
+
+* Have clear organization (for example, to distinguish between two problems).
+* Use complete sentences when answering questions.
+* Include all graphs, and clearly separate answers from code.
+
+# `lm`--fit multiple linear regression models 
+
+```{r}
+library(faraway)
+mul.model<-lm(gamble ~.,data = teengamb) # "."" means to put all variables in teengamb dataset except gamble as predictors
+summary(mul.model)
+str(teengamb)
+```
+**`sex` only has two value, 0 and 1. But actually, 0 refers to male and 1 represents female. Therefore, `sex` can not be treated as a normal numerical variable. We should model `sex` as a dummy variable, which is related to `factor` in R.** 
+ 
+## Dummy variables in linear regression models
+
+
+### Factors in R
+Tell R that a variable is nominal/categorical by making it a factor. The factor stores the nominal values as a vector of integers in the range $[1,\cdots, k]$ (where $k$ is the number of unique values in the nominal variable), and an internal vector of character strings (the original values) mapped to these integers.
+
+```{r}
+gender <- c(rep("male",20), rep("female", 30)) 
+str(gender)
+gender <- as.factor(gender) 
+str(gender)
+```
+
+### Fit multiple regression models with dummy variables
+```{r}
+teengamb.factorSex<-transform(teengamb,sex=as.factor(sex)) # male is 0, female is 1.
+teengamb.factorSex$sex
+factor.model<-lm(gamble~sex+income+sex:income,data = teengamb.factorSex)
+# the same as lm(gamble~sex*income,data = teengamb.factorSex)
+summary(factor.model)
+```
+
+The fitted models are:
+
+\begin{eqnarray}
+\text{For male: } E(gamble_i|sex=0)&=& -2.6596+ 6.5181 * income_i\\
+\text{For Female: }E(gamble_i|sex=1)&=&( -2.6596+ 5.7996 ) +( 6.5181  -6.3432) * income_i\\
+&=& 3.14+0.1749* income_i
+\end{eqnarray}
+
+
+Or write two regression equations into one equation is 
+
+$$E(gamble_i)=-2.6596+ 5.7996 *sex_i + 6.5181*income_i -6.3432 * (sex:income)_i$$
+```{r,fig.width=6.5,fig.height=5}
+plot(gamble~income,data=teengamb,col=2,pch=16,subset = sex==1,main="Male v.s. Female") # female
+points(gamble~income,data=teengamb,col=4,pch=16,subset = sex==0) # male
+abline(a=3.14,b=0.1749,col=2,lwd=2)
+abline(a=-2.6596,b=6.5181,col=4,lwd=2)
+legend(x=7,y=18,legend = c("male","female"),col=c(4,2),lwd=2,pch=16)
+```
+
+## Polynomial regressions
+
+**Model:** $y_i=\beta_0+\beta_1x_i+\beta_2x^2_i+\cdots+\beta_px^p_i+\varepsilon_i$, where $\varepsilon_i\sim N(0,\sigma^2)$.
+
+ This obviously describes a nonlinear relation between $y$ and $x$, but that does not matter; **the model is still a linear model**. What does matter is that the relation between the **parameters** and the **expected observations** is linear.
+
+**Examples of nonlinear models:**
+
+\begin{eqnarray}
+E(y|x)&=&e^{\beta_0+\beta_1x_1+\beta_2x_2}\\
+E(y|x)&=&sin(\beta_0+\beta_1x_1+\beta_2x_2)
+\end{eqnarray}
+ 
+```{r}
+quadratic.model<-lm(gamble~income+I(income^2),data = teengamb)
+summary(quadratic.model)
+```
+ 
+ 
