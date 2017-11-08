@@ -1,0 +1,80 @@
+---
+title: "Week6 Code"
+author: "Lucy Liu"
+date: "11/7/2017"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,fig.align = "center"
+                      ,fig.height=5,fig.width=8)
+```
+
+# $R^2$ in multiple linear regression
+```{r}
+library(faraway)
+mul.model<-lm(gamble ~ factor(sex) + income + verbal, data = teengamb)  
+summary(mul.model)
+```
+
+* Multiple $R^2$:  0.5263
+* Interpretation: 
+    + $R^2$ is the proportion of variability in $Y$ explained by regression on the regressors.
+          $$\sum_{i=1}^n(y_i-\bar{y})^2=\sum_{i=1}^n(y_i-\hat{y}_i)^2+\sum_{i=1}^n(\hat{y}_i-\bar{y})$$
+          $$SSTO=SSE+SSR$$
+          $$R^2=\frac{SSR}{SSTO}=1-\frac{SSE}{SSTO}$$
+    + $R^2$ is the square of the correlation between the observed values $Y$ and the fitted values $\hat{Y}.$
+          $$R^2=Corr^2(Y,\hat{Y})=\left(\frac{\sum_{i=1}^n(y_i-\bar{y})(\hat{y}_i-\bar{y})}{\sqrt{\sum_{i=1}^n(y_i-\bar{y})^2\sum_{i=1}^n(\hat{y}_i-\bar{y})^2}}\right)^2$$
+
+# Individual slope t-statistics
+```{r}
+summary(mul.model)
+```
+Assuming other regressors are in the model, we test $H_0: \beta_i=0$ v.s. $H_1:\beta_i\neq0$.
+By comparing P-value with significance level $\alpha$, we conclude $\beta_i$ is 0 or not, or whether we should include the corresponding predictor in the regression.
+
+For example, assume $\alpha=0.05$.
+
+* `income`: P-value = 6.64e-06 < $\alpha$=0.05, **reject** $H_0: \beta_2=0$. => `income` is a significant predictor.
+* `verbal`: P-value =  0.1397  > $\alpha$=0.05, **fail to reject** $H_0: \beta_3=0$. => `verbal` is not a significant predictor.
+
+# Confidence intervals for individual coefficients $\beta_i$ 
+```{r}
+confi95<-confint(mul.model,level = 0.95)
+confi95
+```
+
+# CI for mean response and prediction intervals
+```{r}
+############                      CI for mean response               ############
+prediction.mean<-predict(mul.model,newdata = data.frame(income=4.6,sex=0,verbal=6.6),
+                         interval = "confidence", se.fit =T, level = 0.95)
+prediction.mean$fit 
+```
+When `income` is 4.6, `verbal` is 6.6, 95% confidence interval for mean response for male (sex=0) is (19.91, 37.17).
+```{r}
+############                      prediction interval               ############
+prediction.observation<-predict(mul.model,newdata = data.frame(income=4.6,sex=0,verbal=6.6),
+                        interval = "prediction", se.fit =T, level = 0.95)
+prediction.observation$fit
+```
+When `income` is 4.6, `verbal` is 6.6, 95% prediction interval for a particular male (sex=0) is (-17.52, 74.60).
+
+
+# Interpreting slope estimates (untransformed predictor/response)
+```{r}
+library(effects)
+mul.model<-lm(gamble ~ sex + income + verbal, data = teengamb) # effect function requires model without factors
+summary(mul.model) # since sex = 0 or 1, we get the same estimate, -22.96 for sex. But treating sex as a factor is more appropriate.
+```
+The interpretation of an estimated coefficient is as a rate of change. For example, the estimated coefficient before predictor `income` is 4.90. **Increasing the `income` by 1 pounds per week, with all the other regressors in the model fixed,  `gamble` expenditure will increase 4.90 pounds per year.**
+```{r}
+plot(Effect("income", mul.model,
+            confint=list(type="Scheffe"),
+            fixed.predictors=list(given.values=c(income=4.6,sex=0))))
+```
+
+
