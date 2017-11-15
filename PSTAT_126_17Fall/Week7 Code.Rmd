@@ -1,0 +1,224 @@
+---
+title: "Week7 Code"
+author: "Lucy Liu"
+date: "11/14/2017"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,fig.align = "center"
+                      ,fig.height=5,fig.width=8)
+```
+
+
+# Interpreting coefficients
+
+## Continuous predictors
+
+Multiple linear model:
+\begin{eqnarray}
+Y_i&=&\beta_0+\beta_1*x_{i1}+\beta_2*x_{i2}+\ldots+\beta_p*x_{ip}+\varepsilon_i,\quad \varepsilon_i \sim N(0,\sigma^2) \text{ independently}.\\
+E(Y_i)&=&\beta_0+\beta_1*x_{i1}+\beta_2*x_{i2}+\ldots+\beta_p*x_{ip}:=a+\beta_p * x_{ip}
+\end{eqnarray}
+As a example, we fix other predictors and denote $\beta_0+\beta_1*x_{i1}+\beta_2*x_{i2}+\ldots+\beta_{p-1}*x_{i,p-1}$ as a constant, $a$.
+
+### Y ~ X ---Predictor and response are untransformed
+```{r}
+library(faraway)
+mul.model<-lm(gamble ~ factor(sex) + income, data = teengamb)  
+summary(mul.model)
+```
+
+
+* ***Increasing the `income` by 1 pounds per week, with all the other regressors in the model fixed,  `gamble` expenditure will increase 5.172 pounds per year.***
+* Math derivation: $$dE(Y)=\beta_p *dx_{p}$$
+or $E(Y^*)=a+\beta_p*(x_p+1)$ and $E(Y)=a+\beta_p*x_p$
+$$E(Y^*)-E(Y)=\beta_p*(x_p+1)-\beta_p*x_p=\beta_p$$
+
+### Y ~ log(X)---log-transformed numeric predictor
+```{r}
+mul.model<-lm(gamble ~ factor(sex) + log(income), data = teengamb)  
+summary(mul.model)
+```
+
+* Math derivation and interpretation for small percentage change:
+    + ***Increasing the `income` by 1% per week, with all the other regressors in the model fixed,  `gamble` expenditure will increase  $22.4937\times 1\% = 0.2249$ pounds per year.*** This interpretation is more practical but requires that the percentage change is less than 10%.
+    + Math derivation: $$E(Y)=a+\beta_p *log(x_{p})$$
+      $$dE(Y)=\beta_p* \frac{dx_{p}}{x_{p}}\text{, note that }\frac{dx}{x}\approx\frac{\bigtriangleup x}{x} \text{ is a percentage change}$$
+* Math derivation and interpretation accurately:
+    + ***Increasing the `income` by 1% (p=0.01) per week, with all the other regressors in the model fixed,  `gamble` expenditure will increase  $22.49\times log(1+0.01)=0.2238$ pounds per year. ***
+    + Math derivation:  
+    $E(Y^*)=a+\beta_p*log((1+p)*x_{p})$ and $E(Y)=a+\beta_p*log(x_{p})$
+    \begin{eqnarray}
+      E(Y^*)-E(Y)&=&\beta_p*[log((1+p)*x_{p})-log(x_{p})]\\
+      &=& \beta_p * log\left(\frac{(1+p)*x_{p}}{x_{p}}\right)\\
+      &=& \beta_p * log(1+p)\\
+      &\approx& \beta_p*p
+\end{eqnarray}
+      NOTE: remind yourself that $log(1+x)=x-\frac{x^2}{2}+\frac{x^3}{3}-\cdots$ for small $x$.
+
+### log(Y) ~ X ---log-transformed response
+```{r}
+teengamb.logY<-transform(teengamb, log.gamble=log(gamble+0.01))
+mul.model<-lm(log.gamble ~ factor(sex) + income, data = teengamb.logY)  
+summary(mul.model)
+```
+* Math derivation and interpretation for small percentage change:
+    + ***Increasing the `income` by 1 pound per week, with all the other regressors in the model fixed,  `gamble` expenditure will increase  $0.2612\times  1\times 100$ percentage (26.12%) per year.*** This interpretation is more practical but requires small change in $x$.
+    + Math derivation: 
+      $$log(E(Y))=a+\beta_p *x_{p}$$
+      $$\frac{dE(Y)}{E(Y)}=\beta_p *dx_{p}$$
+* Math derivation and interpretation accurately:
+    + ***Increasing the `income` by 1 pound per week, with all the other regressors in the model fixed,  `gamble` expenditure will increase $e^{0.26120}-1 = 0.2984 = 29.84\%$  per year.***
+    + Math derivation:
+     $E(Y)=e^{a+\beta_p*x_{p}} \text{ and } E(Y^*)=e^{a+\beta_p*(x_{p}+1)}$
+     Percentage change in $Y$ 
+     \begin{eqnarray}
+     \frac{E(Y^*)-E(Y)}{E(Y)}&=&\frac{e^{a+\beta_p*(x_{p}+1)}-e^{a+\beta_p*x_{p}}}{e^{a+\beta_p*x_{p}}}\\
+     &=& e^{\beta_p}-1\\
+     &\approx& \beta_p
+     \end{eqnarray}
+     NOTE: remind yourself that $e^x=1+x+\frac{x^2}{2}+\frac{x^3}{3}-\cdots$ for small $x$.
+
+### log(Y) ~ log(X)---log-transformed numeric predictor and log-transformed response
+```{r}
+mul.model<-lm(log.gamble ~ factor(sex) + log(income), data = teengamb.logY)  
+summary(mul.model)
+```
+* Math derivation and interpretation for small percentage change:
+    + ***Increasing the `income` by 1% per week, with all the other regressors in the model fixed,  `gamble` expenditure will increase  $1.1782\times 1\%= 1.1782\%$  per year.*** This interpretation is more practical but requires small change in $x$.
+    + Math derivation: 
+      $$log(E(Y))=a+\beta_p* log(x_{p})$$
+      $$\frac{dE(Y)}{E(Y)}=\beta_p *\frac{dE(X)}{E(X)}$$
+* Math derivation and interpretation accurately:
+    + ***Increasing the `income` by 1% per week, with all the other regressors in the model fixed,  `gamble` expenditure will increase $(1+0.01)^{1.1782}-1=0.01179=1.179\%$  per year.***
+    + Math derivation:
+     $E(Y)=e^{a+\beta_p*log(x_{p})} \text{ and } E(Y^*)=e^{a+\beta_p*log[x_{p}*(1+p)]}$
+     Percentage change in $Y$ 
+     \begin{eqnarray}
+     \frac{E(Y^*)-E(Y)}{E(Y)}&=&\frac{e^{a+\beta_p*log[x_{p}*(1+p)]}-e^{a+\beta_p*log(x_{p})}}{e^{a+\beta_p*log(x_{p})}}\\
+     &=& (1+P)^{\beta_p}-1\\
+     &\approx& \beta_p*P
+     \end{eqnarray}
+     NOTE: remind yourself that for small $x$, $(1+x)^a=1+ a* x+c_2x^2+\cdots$, where $c_i$ is the generalized binomial coefficients.
+
+
+## Categorical predictors
+
+***Key: coefficients for categorical predictors are contrasts since predictor is a dummy variable.***
+
+## Parallel models--only consider main effect of categorical predictors
+```{r}
+library(alr4)
+levels(UN11$group) # "oecd"   "other"  "africa"
+factor.model<-lm(lifeExpF ~ group+ppgdp,data = UN11) # ppgdp--Per capita gross domestic product in US dollars
+summary(factor.model)
+```
+Fitted model: 
+\begin{eqnarray}
+\text{For group oecd: } E(Y)&=&76.91+1.465\times 10^{-4}*ppgdp\\
+\text{For group other:} E(Y)&=&76.91-3.225+1.465\times 10^{-4}*ppgdp\\
+\text{For group africa:} E(Y)&=&76.91-17.51+1.465\times 10^{-4}*ppgdp
+\end{eqnarray}
+Group `oecd` is the base group. The coefficient, -3.225, before `groupother` is the contrasts/difference between group `oecd` and `other`. The coefficient, -17.51, before `groupafrica` is the contrasts/difference between group `oecd` and `africa`.
+```{r}
+library(ggplot2)
+fittedlife<-transform(UN11,fitted.lifeExp=fitted(factor.model))
+ggplot(fittedlife,aes(x=ppgdp,y=fitted.lifeExp,colour = group))+
+        geom_point()+
+        geom_line()+
+        labs(x="Age",y="fitted female life expectancy")+
+        labs(title = "parallel model")
+
+```
+## Non-parallel models--consider main effect and interaction btw categorical and numeric variables
+
+```{r}
+factor.model.interaction<-lm(lifeExpF ~ group*ppgdp,data = UN11) # ppgdp--Per capita gross domestic product in US dollars
+summary(factor.model.interaction)
+```
+
+Fitted model: 
+\begin{eqnarray}
+\text{For group oecd: } E(Y)&=&80.59+4.929\times 10^{-5}*ppgdp\\
+\text{For group other:} E(Y)&=&80.59-7.301+(4.929\times 10^{-5}+1.333\times 10^{-4})*ppgdp\\
+\text{For group africa:} E(Y)&=&80.59-17.51+(4.929\times 10^{-5}+7.796\times 10^{-4})*ppgdp
+\end{eqnarray}
+```{r}
+fittedlife.interaction<-transform(UN11,fitted.lifeExp=fitted(factor.model.interaction))
+ggplot(fittedlife.interaction,aes(x=ppgdp,y=fitted.lifeExp,colour = group))+
+        geom_point()+
+        geom_line()+
+        labs(x="Age",y="fitted female life expectancy")+
+        labs(title = "Non-parallel model")
+```
+Therefore, compared with parallel models, besides the intercept, categorical predictors also influence the slope in  non-parallel models. The fitted lines are not parallel with each other in this case. 
+
+# Partial F-tests 
+
+## Notes summary
+
+Full model: 
+$$Y_i=\beta_0+\beta_1*x_{i1}+\beta_2*x_{i2}+\ldots+\beta_q*x_{iq}+\ldots+\beta_p*x_{ip}+\varepsilon_i,\quad \varepsilon_i \sim N(0,\sigma^2) \text{ independently}.$$
+
+Submodel/reduced model:
+
+$$Y_i=\beta_0+\beta_1*x_{i1}+\beta_2*x_{i2}+\ldots+\beta_q*x_{iq}+\varepsilon_i,\quad \varepsilon_i \sim N(0,\sigma^2) \text{ independently}.$$
+
+To determine whether the reduced model is already adequate to fit the data, it is equivalent to test: 
+$$H_0: \beta_{q+1}=\beta_{q+2}=\cdots=\beta_p=0\quad { V.S. }\quad H_1:\text{ at least one }\beta_i \text{ is not 0.} $$
+
+Partial F-tests:
+$$F_{partial}^*=\frac{(SSE(R)-SSE(F))/(p-q)}{SSE(F)/(n-p-1)}$$
+Under $H_0$, $F_{partial}^*\sim F_{(p-q),(n-p-1)}.$
+
+## Example
+```{r}
+colnames(teengamb)
+full.model<-lm(gamble ~ . ,data = teengamb )
+summary(full.model) # status and verbal does not seem very relevant 
+reduce.model<-update(full.model, . ~ .-verbal-status)
+summary(reduce.model)
+anova(full.model,reduce.model)
+```
+Back to the teenage gample example, we have,  `sex`,   `status`, `income` and `verbal`, four possible predictors. Now we aim to check whether we can build a simpler model to predict gamble expenditure.
+
+* Full model: $E(gamble) =\beta_0+\beta_1* sex +\beta_2* income+\beta_3 *status +\beta_4* verbal$  
+* Reduced model: $E(gamble) =\beta_0+\beta_1* sex +\beta_2* income$ 
+* Null hypothesis: $H_0: \beta_3=\beta_4=0$. 
+* F statistic:
+  \begin{eqnarray}
+  F_{partial}^*&=& \frac{(SSE(R)-SSE(F))/(p-q)}{SSE(F)/(n-p-1)}\\
+  &=& \frac{(22781-21624)/(4-2)}{21624/(47-4-1)}=1.1242
+  \end{eqnarray}
+* Conclusion: P-value = 0.3345 > 0.05 = $\alpha$, fail to reject $H_0$. The reduced model is adequate to fit the data.
+
+
+
+# R command used in the final project
+
+* `getwd/setwd`: Creat a new directory, and put your data, R script and report in this directory. Set it to be working directory.
+* `read.csv`: read .csv data into R.
+* `read.table`: for data in general format, use read.table. 
+* `dir()`: check the files in working directory.
+
+Iris data link: <http://archive.ics.uci.edu/ml/machine-learning-databases/iris/>
+```{r}
+# dir()
+rawdata<-read.table("Iris example.txt",header = F, # the download data set has no column names
+                    sep = ",", # separated by ","
+                    col.names =c("sepal length","sepal width","petal length","petal width","class"),
+                    stringsAsFactors = T) # character vectors as factor
+```
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
