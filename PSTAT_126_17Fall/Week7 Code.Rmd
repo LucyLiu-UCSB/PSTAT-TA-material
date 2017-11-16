@@ -110,7 +110,7 @@ summary(mul.model)
 
 ***Key: coefficients for categorical predictors are contrasts since predictor is a dummy variable.***
 
-## Parallel models--only consider main effect of categorical predictors
+### Parallel models--only consider main effect of categorical predictors
 ```{r}
 library(alr4)
 levels(UN11$group) # "oecd"   "other"  "africa"
@@ -120,8 +120,8 @@ summary(factor.model)
 Fitted model: 
 \begin{eqnarray}
 \text{For group oecd: } E(Y)&=&76.91+1.465\times 10^{-4}*ppgdp\\
-\text{For group other:} E(Y)&=&76.91-3.225+1.465\times 10^{-4}*ppgdp\\
-\text{For group africa:} E(Y)&=&76.91-17.51+1.465\times 10^{-4}*ppgdp
+\text{For group other: } E(Y)&=&76.91-3.225+1.465\times 10^{-4}*ppgdp\\
+\text{For group africa: } E(Y)&=&76.91-17.51+1.465\times 10^{-4}*ppgdp
 \end{eqnarray}
 Group `oecd` is the base group. The coefficient, -3.225, before `groupother` is the contrasts/difference between group `oecd` and `other`. The coefficient, -17.51, before `groupafrica` is the contrasts/difference between group `oecd` and `africa`.
 ```{r}
@@ -134,7 +134,8 @@ ggplot(fittedlife,aes(x=ppgdp,y=fitted.lifeExp,colour = group))+
         labs(title = "parallel model")
 
 ```
-## Non-parallel models--consider main effect and interaction btw categorical and numeric variables
+
+### Non-parallel models--consider main effect and interaction btw categorical and numeric variables
 
 ```{r}
 factor.model.interaction<-lm(lifeExpF ~ group*ppgdp,data = UN11) # ppgdp--Per capita gross domestic product in US dollars
@@ -144,8 +145,8 @@ summary(factor.model.interaction)
 Fitted model: 
 \begin{eqnarray}
 \text{For group oecd: } E(Y)&=&80.59+4.929\times 10^{-5}*ppgdp\\
-\text{For group other:} E(Y)&=&80.59-7.301+(4.929\times 10^{-5}+1.333\times 10^{-4})*ppgdp\\
-\text{For group africa:} E(Y)&=&80.59-17.51+(4.929\times 10^{-5}+7.796\times 10^{-4})*ppgdp
+\text{For group other: } E(Y)&=&80.59-7.301+(4.929\times 10^{-5}+1.333\times 10^{-4})*ppgdp\\
+\text{For group africa: } E(Y)&=&80.59-22.89+(4.929\times 10^{-5}+7.796\times 10^{-4})*ppgdp
 \end{eqnarray}
 ```{r}
 fittedlife.interaction<-transform(UN11,fitted.lifeExp=fitted(factor.model.interaction))
