@@ -1,0 +1,50 @@
+---
+title: "Week9 Code"
+author: "Lucy Liu"
+date: "11/28/2017"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,fig.align = "center"
+                      ,fig.height=8,fig.width=8)
+```
+
+#  Model Selection - stepwise procedures using AIC/BIC.  
+```{r}
+library(alr4)
+Highway_trsf = with(Highway, data.frame(logRate=log(rate), logLen=log(len), logAdt=log(adt),
+                                        logTrks=log(trks), slim, shld, logSin1=log((sigs * len + 1)/len)))
+fit.full<-lm(logRate~. , data = Highway_trsf)
+fit.constant<-lm(logRate~1, data = Highway_trsf) # only has 1 vector(constant) as the single predictor
+```
+
+> step(object, scope, direction = c("both", "backward", "forward"), trace = 1, steps = 1000, k = 2)
+
+* k = 2 => give AIC 
+* k = log(n) => refer to BIC, where n is the sample size.
+```{r}
+step(fit.constant, scope = list(upper=formula(fit.full)), direction = "forward", k = 2 )
+# we want to keep logAdt (average daily traffic count in thousands) in the model no matter it is significant or not. Use 'lower' to specify the minimum range of models examined in the stepwise search.
+step(fit.full, scope = list(lower= logRate ~ logAdt), direction = "backward", k = log(nrow(Highway_trsf)))
+step(fit.full, direction = "both", k = 2)
+```
+**Remark: Forward, backward and stepwise (i.e. both backward and forward are considered at each step) may give you different results. I prefer stepwise (direction = "both") when using this procedure.**
+
+# Review of residual diagnostic plots
+
+**Key: There is no difference in how we interpret these for multiple linear regression compared with simple linear regression case.**
+
+Please review part 1 Residual Diagnostic plots in Week4 Code.
+
+# Influential points
+```{r}
+fit.final<-lm(formula = logRate ~ logLen + logAdt + logTrks + slim + logSin1, data = Highway_trsf)
+influenceIndexPlot(fit.final, vars = c('hat', 'Cook'), id.n = 5, id.cex = 1)
+hatvalues(fit.final) [c(2,9,11,13,20)] # the largest five hat values
+cooks.distance(fit.final) [c(2,27,29,36,37)] # the largest five cook distance values
+```
+**Remark: Since the hat matrix $X(X'X)^{-1}X'$ only depends on design matrix $X$, high leverage points can be thought of as “outliers in x”. However, high influence is due to a point either being an outlier in Y or in x, or perhaps both.**
