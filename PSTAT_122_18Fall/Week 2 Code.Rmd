@@ -1,0 +1,81 @@
+---
+title: "Week 2 Code"
+author: "Lucy Liu"
+date: "10/9/2018"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+# ANOVA table and test effects (calculation by hand)
+
+This will be showed on board in section.
+
+# Analysis CRD in R
+
+## ANOVA table and test effects (calculation in R)
+
+* The objective of the analysis is to check if all the $\nu$ treatments have the same effect, that is we want to test
+$$H_0: \tau_1= \tau_2= \ldots =\tau_\nu$$
+
+```{r}
+battery.data <- read.table ("battery.txt" , header = TRUE) 
+battery.data$fType <- factor(battery.data$Type)
+model1 <- aov(LPUC ~ fType, data = battery.data) # Fit aov model anova(model1) 
+# ANOVA table and F test
+summary(model1)
+```
+
+##  Single Contrasts
+
+* suppose we are interested in the following contrasts:
+$$\tau_1-\tau_2$$
+$$\frac{1}{2}(\tau_1+\tau_2) -\frac{1}{2}(\tau_3+\tau_4)$$
+$$\frac{1}{2}(\tau_1+\tau_2) - \tau_4$$
+```{r}
+# install.packages("contrast")
+library(contrast)
+fit1 <- lm(LPUC ~ fType, data = battery.data) # Fit aov model 
+contrast(fit1, list(fType=as.factor(1)), list(fType=as.factor(2)))
+contrast(fit1, list(fType=as.factor(1:2)), list(fType=as.factor(3:4)), type="average")
+contrast(fit1, list(fType=as.factor(1:2)), list(fType=as.factor(4)), type="average")
+```
+## Multiple comparison problem
+
+* the experimenter does m preplanned simultaneous comparisons.
+
+### Bonferroni correction method for m multiple comparisons
+$$\sum c_i\tau_i \in(\sum c_i\bar{y}_{i.} -w_B\sqrt{MSE\sum c_i^2/r_i}, \sum c_i\bar{y}_{i.} +w_B\sqrt{MSE\sum c_i^2/r_i})$$
+where $W_B=t_{n-\nu,\alpha/2m}$.
+
+ Suppose m = 5, one of the 5 comparisons aims to estimate:
+ $$\frac{1}{2}(\tau_1+\tau_2) -\frac{1}{2}(\tau_3+\tau_4)$$
+ Therefore, $c_1=c_2=\frac{1}{2}, c_3=c_4=-\frac{1}{2}$.
+```{r}
+# install.packages("plyr")
+w.B <- qt(p = 1-(0.05/2/5), df = 16-4)
+library(plyr)
+(mean.table <- ddply(battery.data, .(fType), summarize, mean = mean(LPUC)))
+c.vector <- c(0.5, 0.5, -0.5, -0.5)
+# the Bonferroni confidence interval is 
+c(mean.table$mean%*%c.vector-w.B*sqrt(2368*sum(c.vector^2)/4), mean.table$mean%*%c.vector+w.B*sqrt(2368*sum(c.vector^2)/4))
+```
+
+### Scheffe correction method for all multiple comparisons
+$w_S = \sqrt{(\nu-1)*F_{\nu-1, n-\nu,\alpha}}$
+```{r}
+# the Scheffe confidence interval is 
+w.S <- qf(p = 0.95, df1 = 4-1, df2 = 16-4)
+c(mean.table$mean%*%c.vector-w.S*sqrt(2368*sum(c.vector^2)/4), mean.table$mean%*%c.vector+w.S*sqrt(2368*sum(c.vector^2)/4))
+```
+### Tukey method for all pairwise comparisons
+```{r}
+TukeyHSD(model1, "fType", ordered = TRUE, conf.level = 0.95)
+plot(TukeyHSD(model1, "fType", ordered = TRUE, conf.level = 0.95))
+```
+

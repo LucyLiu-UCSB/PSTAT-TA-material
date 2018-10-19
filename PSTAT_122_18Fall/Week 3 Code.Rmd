@@ -1,0 +1,52 @@
+---
+title: "Week 3 Code"
+author: "Lucy Liu"
+date: "10/16/2018"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+# Hints for Homework 2
+
+This will be showed on board in section. Please feel free to ask questions.
+
+# Randomized Complete Block Design
+
+## An example
+We're evaluating the effect of three different fertilizer application rates on wheat yields. We suspect that the soil type and management histories of our experimental fields are quite different, leading to significant 'field effects' on yield. There are two factors in play in this setting: the first is the set of treatments that are the subject of the experiment (fertilizer application rate); the second is the source of nuisance variation (field). Fertilizer application rate is the **treatment factor** and field is the **blocking factor**.
+
+Here is one way to block the experiment. The essence of the design is that a set of fields are chosen, which may differ in various unknown conditions (soil water, aspect, disturbance, etc.) and within each field, three plots are set up. Each plot receives one of the three fertilizer rate treatments at random. If we chose to work with eight fields the resulting data might look like this:
+
+```{r example}
+experiment.data <- data.frame( Block = factor(rep(paste0("Field", 1:8),3)), 
+                               Fertilizer = factor(rep(c("Control", "Absent", "High"), each = 8)),
+                               yields = c(9.3, 8.7, 9.3, 9.5, 9.9, 8.9, 8.3, 9.1,
+                                          8.7, 7.1, 8.2, 8.9, 9.1, 8.0, 6.2, 7.0,
+                                          10.0, 9.1, 10.4, 10.0, 10.8, 9.0, 8.9, 8.1))
+experiment.data 
+```
+## Compute ANOVA table
+```{r}
+anova.fit <- aov(yields ~ Fertilizer + Block, data = experiment.data)
+summary(anova.fit) # this commend returns ANOVA table
+```
+## Make a decision
+
+### Test treatment effect
+
+* Hypothesis test: $$H_{0T}: \tau_1 = \tau_2 = \tau_3$$
+* Test statistics : $$F_{obs} = 29.145$$
+* P-value = $P(F_{2, 14} \geq F_{obs} = 29.145) = 1.02\times 10^{-5}$
+* Make a conclusion: Since P-value is less than significance level $\alpha = 0.05$, we reject $H_{0T}$ and conclude that at significance level 0.05, there is a significant difference in the effect of three different fertilizer application rates on wheat yields.
+
+### Test block effect
+* Hypothesis test: $$H_{0B}: \beta_1 = \beta_2 = \ldots = \beta_8$$
+* Test statistics : $$F_{obs} = 8.729$$
+* P-value = $P(F_{7, 14} \geq F_{obs} = 8.729) = 0.000339$
+* Make a conclusion: Since P-value is less than significance level $\alpha = 0.05$, we  reject $H_{0B}$ and conclude that at significance level 0.05, there exists significant 'field effects' on yield.
