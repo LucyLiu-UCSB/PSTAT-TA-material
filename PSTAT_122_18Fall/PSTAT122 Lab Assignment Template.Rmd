@@ -1,0 +1,34 @@
+---
+title: "PSTAT 122 Lab Assignment 1"
+author: "Xi Liu, 4358545, Section: Lucy's Wed 8:00 am"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output: 
+ pdf_document: 
+    toc: yes
+    toc_depth: 3
+---
+```{r setup, echo=FALSE}
+# set global chunk options: images will be 6x4 inches
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center', fig.width=6, fig.height=4)
+options(digits = 4)
+```
+\newpage
+# 1. Are insulin levels linked to cancer?
+
+## (a) Response variable
+
+The response variable is ...
+
+## (b) Factors
+
+## (c)
+
+# 2. Does Kudze increase bone density?
+
+## (a)
+```{r}
+# Put your R code in chunks
+```
+## (b)
+
+

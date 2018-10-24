@@ -1,0 +1,133 @@
+---
+title: "Week 4 Code--Randomized Complete Block Design"
+author: "Lucy Liu"
+date: "10/22/2018"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+
+# An example
+We're evaluating the effect of three different fertilizer application rates on wheat yields. We suspect that the soil type and management histories of our experimental fields are quite different, leading to significant 'field effects' on yield. There are two factors in play in this setting: the first is the set of treatments that are the subject of the experiment (fertilizer application rate); the second is the source of nuisance variation (field). Fertilizer application rate is the **treatment factor** and field is the **blocking factor**.
+
+Here is one way to block the experiment. The essence of the design is that a set of fields are chosen, which may differ in various unknown conditions (soil water, aspect, disturbance, etc.) and within each field, three plots are set up. Each plot receives one of the three fertilizer rate treatments at random. If we chose to work with eight fields the resulting data might look like this:
+
+```{r example}
+experiment.data <- data.frame( Block = factor(rep(paste0("Field", 1:8),3)), 
+                               Fertilizer = factor(rep(c("Control", "Absent", "High"), each = 8)),
+                               yields = c(9.3, 8.7, 9.3, 9.5, 9.9, 8.9, 8.3, 9.1,
+                                          8.7, 7.1, 8.2, 8.9, 9.1, 8.0, 6.2, 7.0,
+                                          10.0, 9.1, 10.4, 10.0, 10.8, 9.0, 8.9, 8.1))
+experiment.data 
+```
+# Compute two-way ANOVA table
+```{r}
+anova.fit <- aov(yields ~ Fertilizer + Block, data = experiment.data)
+summary(anova.fit) # this commend returns ANOVA table
+```
+# Make a decision
+
+**Notation and model for RCBD**
+
+$$Y_{ij} = \mu + \beta_i + \tau_j + \epsilon_{ij},\qquad i = 1,\ldots, r,\quad j = 1,\ldots, t$$
+where $\epsilon \sim N(0, \sigma^2).$
+
+## Test treatment effect
+
+* Hypothesis test: $$H_{0T}: \tau_1 = \tau_2 = \tau_3$$
+* Test statistics : $$F_{obs} = 29.145$$
+* P-value = $P(F_{2, 14} \geq F_{obs} = 29.145) = 1.02\times 10^{-5}$
+* Make a conclusion: Since P-value is less than significance level $\alpha = 0.05$, we reject $H_{0T}$ and conclude that at significance level 0.05, there is a significant difference in the effect of three different fertilizer application rates on wheat yields.
+
+## Test block effect
+* Hypothesis test: $$H_{0B}: \beta_1 = \beta_2 = \ldots = \beta_8$$
+* Test statistics : $$F_{obs} = 8.729$$
+* P-value = $P(F_{7, 14} \geq F_{obs} = 8.729) = 0.000339$
+* Make a conclusion: Since P-value is less than significance level $\alpha = 0.05$, we  reject $H_{0B}$ and conclude that at significance level 0.05, there exists significant 'field effects' on yield.
+
+# Confidence interval for $\sigma^2$
+We use $MSE = \frac{SSE}{(r-1)(t-1)}$ to estimate $\sigma^2$. Based on the sampling distribution of $SSE$, we are able to construct confidence interval for $\sigma^2$. $$\frac{SSE}{\sigma^2} \sim \chi^2_{(r-1)(t-1)}$$ Since we are interested in the upper bound of the CI for sigma square, so we compute one-sided CI instead of two-sided CI.
+
+$$P\left(\chi^2_{\alpha;(r-1)(t-1)}<\frac{SSE}{\sigma^2}\right) = 1 - \alpha$$
+$$P\left( \sigma^2 < \frac{SSE}{\chi^2_{\alpha;(r-1)(t-1)}}\right) = 1 - \alpha$$
+Therefore, the $1 - \alpha$ confidence interval for $\sigma^2$ is $$\left(0,  \frac{SSE}{\chi^2_{\alpha;(r-1)(t-1)}}\right).$$
+```{r}
+# the 95% confidence interval for \sigma^2 is
+c(0,  2.787/qchisq(p = 0.05, df = 14))
+```
+# Confidence interval for single contrast
+
+## Pairwise comparison of treatment
+
+* Parameter of interest: $\tau_i - \tau_j$
+* Point estimation: $\bar{y}_{. i} - \bar{y}_{. j}$
+* Margin of error: $t_{\alpha/2; (r-1)(t-1)}\times \sqrt{\frac{2MSE}{r}}$
+* $1-\alpha$ confidence interval for $\tau_i - \tau_j$ is $$\bar{y}_{. i} - \bar{y}_{. j} \pm t_{\alpha/2; (r-1)(t-1)}\times \sqrt{\frac{2MSE}{r}}$$
+```{r}
+library(dplyr)
+(treat_mean <- experiment.data %>%
+        group_by(Fertilizer) %>%
+        summarise(mean_Treatment = mean(yields)))
+cat("the confidence interval for the difference btw Absend and Control is (",
+    c(7.9 - 9.125 - qt(p = 0.05/2, df = 2*7, lower.tail = F)*sqrt(2*0.199/8),
+      7.9 - 9.125 + qt(p = 0.05/2, df = 2*7, lower.tail = F)*sqrt(2*0.199/8)), ").")
+```
+## Pairwise comparison of Block
+
+* Parameter of interest: $\beta_i - \beta_j$
+* Point estimation: $\bar{y}_{i.} - \bar{y}_{j.}$
+* Margin of error: $t_{\alpha/2; (r-1)(t-1)}\times \sqrt{\frac{2MSE}{t}}$
+* $1-\alpha$ confidence interval for $\beta_i - \beta_j$ is $$\bar{y}_{i.} - \bar{y}_{j.} \pm t_{\alpha/2; (r-1)(t-1)}\times \sqrt{\frac{2MSE}{t}}$$
+```{r}
+experiment.data %>%
+        group_by(Block) %>%
+        summarise(mean_Block = mean(yields))
+cat("the confidence interval for the difference btw Feild1 and Feild2 is (",
+    c(9.333 - 8.300 - qt(p = 0.05/2, df = 2*7, lower.tail = F)*sqrt(2*0.199/3),
+      9.333 - 8.300 + qt(p = 0.05/2, df = 2*7, lower.tail = F)*sqrt(2*0.199/3)), ").")
+```
+# Multiple comparison problem
+
+To make it simple in multiple comparison problem, we are assuming that the experimenter is interested in comparing only the block contrasts or the treatment contrasts but not at both at the same time.
+
+## Bonferroni correction method for m multiple comparisons
+
+Suppose we want to do $m$ preplanned simultaneous comparisons/ compute $m$ confidence intervals for linear combination of treatment effects, $\sum c_i\tau_i$, where $\sum c_i = 0$. The Bonferroni corrected confidence interval for $\sum c_i\tau_i$ is 
+$$\sum c_i\tau_i \in\left(\sum c_i\bar{y}_{.i} -w_B\sqrt{MSE\sum c_i^2/r}, \sum c_i\bar{y}_{.i} +w_B\sqrt{MSE\sum c_i^2/r}\right)$$
+where $w_B = t_{\alpha/2m ; (r-1)(t-1)}$.
+
+Suppose $m = 5$, one of the 5 comparisons aims to estimate:
+ $$\frac{1}{2}(\tau_{Control}+\tau_{High}) - \tau_{Absent}$$
+ Therefore, $c_1=-1, c_2=c_3=\frac{1}{2}$.
+```{r}
+w.B <- qt(p = 0.05/2/5, df = 2*7, lower.tail = F)
+c.vector <- c(-1, 0.5, 0.5)
+# the Bonferroni confidence interval is 
+c(treat_mean$mean_Treatment%*%c.vector - w.B*sqrt(0.199*sum(c.vector^2)/8), 
+  treat_mean$mean_Treatment%*%c.vector + w.B*sqrt(0.199*sum(c.vector^2)/8))
+```
+
+
+## Scheffe correction method for all multiple comparisons
+
+For the same question,  $$\frac{1}{2}(\tau_{Control}+\tau_{High}) - \tau_{Absent},$$ change $w_B$ to 
+$w_S = \sqrt{(t-1)*F_{t-1, (t-1)(r-1);\alpha}}$
+```{r}
+# the Scheffe confidence interval is 
+w.S <- qf(p = 0.95, df1 = 3-1, df2 = 2*7)
+c(treat_mean$mean_Treatment%*%c.vector - w.S*sqrt(0.199*sum(c.vector^2)/8), 
+  treat_mean$mean_Treatment%*%c.vector + w.S*sqrt(0.199*sum(c.vector^2)/8))
+```
+
+## Tukey method for all pairwise comparisons
+```{r}
+TukeyHSD(anova.fit, "Fertilizer", ordered = TRUE, conf.level = 0.95)
+plot(TukeyHSD(anova.fit, "Fertilizer", ordered = TRUE, conf.level = 0.95))
+```
+
