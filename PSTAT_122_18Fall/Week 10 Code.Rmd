@@ -1,0 +1,140 @@
+---
+title: "Week 10 Code—complete confounding in 2^k design"
+author: "Lucy Liu"
+date: "12/04/2018"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(knitr)
+library(kableExtra)
+library(tibble)
+library(dplyr)
+```
+
+# (2^4, 2^2) design with complete confounding
+
+## Given confounding effects, find layout.
+
+* Equation method of finding the key block or confounded effects.
+
+If a treatment effect $A^{l_1}B^{l_2}\ldots N^{l_n}$ is confounded in a replicate then any treatment combination $a^{x_1}b^{x_2}\ldots n^{x_n}$ will belong to the key block if
+$$l_1x_1+l_2x_2+\ldots+l_nx_n = 0(mod 2)$$
+
+
+**EG:** Suppose effects BCD, ABD are confouned, write down the layout of one replicate.
+
+## Given the key block design, find the confounding effects.
+
+**EG:** Give the key block has treatment effects (1), (bd), (abc) and (acd), find the confounding effects.
+
+## Compute total effects and main effects
+```{r, echo = FALSE}
+design <- c("( 1 )", "(bd)", "(abc)", "(acd)",
+            "( a )", "(abd)", "(bc)", "( cd )", 
+            "( b )", "( d )", "(ac)", "(abcd)",
+            "( c )", "(bcd)", "(ab)", "(ad)")
+
+set.seed(1203)
+rep1.data <- data.frame(Block = rep(1:4, each = 4), 
+                        Rep = rep(-1, 16 ),
+                        y = sample(-3:4, size = 16, replace = T) + c(0, 7, rep(0, 14)),
+                        design = design)
+set.seed(1204)
+rep2.data <- data.frame(Block = rep(5:8, each = 4), 
+                        Rep = rep(1, 16 ),
+                        y = sample(-3:4, size = 16, replace = T) + c(0, 7, rep(0, 14)),
+                        design = design)
+
+treat.combi <- expand.grid(A = c(-1, 1), B = c(-1, 1), C = c(-1, 1), D = c(-1, 1))
+treatment <- c("( 1 )", "( a )", "( b )", "(ab)", "( c )", "(ac)", "(bc)", "(abc)", 
+               "( d )", "(ad)", "(bd)", "(abd)", "( cd )", "(acd)", "(bcd)", "(abcd)")
+
+treat.combi$design <- treatment
+rep1.join <- inner_join(rep1.data, treat.combi, by ="design")
+rep2.join <- inner_join(rep2.data, treat.combi, by ="design")
+data.all <- rbind(rep1.join, rep2.join)
+
+display1.data <- cbind(rep1.join[1:4, 4:3], rep1.join[(1:4)+4, 4:3],
+                      rep1.join[(1:4)+8, 4:3], rep1.join[(1:4)+12, 4:3])
+display2.data <- cbind(rep2.join[1:4, 4:3], rep2.join[(1:4)+4, 4:3],
+                      rep2.join[(1:4)+8, 4:3], rep2.join[(1:4)+12, 4:3])
+display.all <- cbind(display1.data, display2.data)
+
+col.name = character()
+col.name[seq(1,16,by = 2)] <- paste0("block", 1:8)
+col.name[seq(2,16,by = 2)] <- paste0("y", 1:8)
+
+kable(display.all, col.names = col.name) %>%
+        kable_styling("striped", full_width=FALSE) %>%
+        add_header_above(c("Replicate I" = 8, "Replicate II" = 8)) 
+```
+
+
+```{r}
+k = 4; r = 2; block_size = 4; replicate_size = 16
+signtable <- data.frame(trt.comb = design)
+signtable$A <- c(-1, -1, 1, 1, 1, 1, -1, -1, 
+                 -1, -1, 1, 1, -1, -1, 1, 1)
+signtable$B <- c(-1, 1, 1, -1, -1, 1, 1, -1,
+                 1, -1, -1, 1, -1, 1, 1, -1)
+signtable$C <- c(-1, -1, 1, 1, -1, -1, 1, 1,
+                 -1, -1, 1, 1, 1, 1, -1, -1)
+signtable$D <- c(-1, 1, -1, 1, -1, 1, -1, 1,
+                 -1, 1, -1, 1, -1, 1, -1, 1)
+signtable <- signtable%>%
+        mutate(AB = A*B, AD = A*D, BD = B*D, BC = B*C, CD = C*D) %>%
+        mutate(ABC = AB*C, ACD = A*C*D) %>%
+        mutate(ABCD = ABC*D) %>% as.tibble()
+kable(signtable) %>% kable_styling("striped", full_width=FALSE)
+total.yeild_x = rep1.join$y + rep2.join$y
+total.effect_X = apply(signtable[,-1], 2, function(x) x%*%total.yeild_x) # total effect
+main.effect_X = round(total.effect_X/2^(k-1)/r, 4)  # main effect
+tibble(effect.name = names(total.effect_X), total.effect_X = total.effect_X, main.effect_X = main.effect_X)
+```
+## compute ANOVA table manually
+
+```{r}
+head(data.all)
+SS_X = total.effect_X^2/2^k/r 
+grand.total = sum(data.all$y)
+SS_total = (2^k*r-1) * var(data.all$y)
+block_sum <- data.all %>%
+        group_by(Block) %>%
+        summarise(block_sum = sum(y))
+SS_block = sum(block_sum$block_sum^2)/block_size - grand.total^2/(2^k*r)
+replicate_sum <- data.all %>%
+        group_by(Rep) %>%
+        summarise(replicate_sum = sum(y))
+SS_rep = sum(replicate_sum$replicate_sum^2)/replicate_size - grand.total^2/(2^k*r) 
+SS_block.within.rep = SS_block - SS_rep
+pvalue = pf(q = (SS_X/1)/(62.375/12), df1 = 1, df2 = 12)
+ANOVA.manual <- data.frame(VarSource = c(names(total.effect_X), "SS_rep", "SS_block.in.rep", "error", "total"),
+                           df = c(rep(1,12), r-1, (8-1) - (r-1), 32-13-1-6, 32), 
+                           SS = c(SS_X, SS_rep, SS_block.within.rep, SS_total-sum(SS_X, SS_block),SS_total)) %>%
+        mutate(MS = SS / df) %>%
+        mutate(F_obs = MS/((SS_total-sum(SS_X, SS_block))/12))%>%
+        mutate(Pvalue = pf(F_obs, df1 = 1, df2 = 12, lower.tail = F))
+ANOVA.manual$F_obs[15:16] = NA
+ANOVA.manual$Pvalue[15:16] = NA
+print(ANOVA.manual, digits = 4)
+```
+## compute ANOVA table in R
+
+```{r}
+lm.fit <- lm(y ~ A*B*C*D - B:C:D - A:B:D - A:C + Rep + factor(Block), data = data.all)
+(ANOVA.table <- anova(lm.fit))
+```
+
+## Suitable model
+
+According to the Pvalues in the above ANOVA table, only main effects, A and C, are significant, we reduce the model to be
+
+$$y = \mu + A +  C + \epsilon$$

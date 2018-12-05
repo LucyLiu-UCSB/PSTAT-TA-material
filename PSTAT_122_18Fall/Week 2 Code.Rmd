@@ -70,7 +70,7 @@ c(mean.table$mean%*%c.vector-w.B*sqrt(2368*sum(c.vector^2)/4), mean.table$mean%*
 $w_S = \sqrt{(\nu-1)*F_{\nu-1, n-\nu,\alpha}}$
 ```{r}
 # the Scheffe confidence interval is 
-w.S <- qf(p = 0.95, df1 = 4-1, df2 = 16-4)
+w.S <- sqrt((4-1) * qf(p = 0.95, df1 = 4-1, df2 = 16-4))
 c(mean.table$mean%*%c.vector-w.S*sqrt(2368*sum(c.vector^2)/4), mean.table$mean%*%c.vector+w.S*sqrt(2368*sum(c.vector^2)/4))
 ```
 ### Tukey method for all pairwise comparisons

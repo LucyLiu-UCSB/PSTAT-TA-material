@@ -1,0 +1,80 @@
+---
+title: "Week 9 Code—Partial confounding in 2^k design"
+author: "Lucy Liu"
+date: "11/27/2018"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(knitr)
+library(kableExtra)
+library(tibble)
+library(dplyr)
+```
+
+# (2^3, 2) design with partial confounding
+
+## Example
+
+A study was performed to determine the effect of percentage of carbonation (A), operating pressure (B), and line speed (C) on the fill height of a carbonated beverage. Suppose that each batch of syrup is only large enough to test four treatment combinations. Thus, each replicate of the $2^3$ design must be run in two blocks. Two replicates are run.
+
+```{r, echo=F}
+obser.table <- data.frame(block1 = c("( 1 )", "ab", "ac", "bc"), value1 = c(-3, 2, 2, 1),
+                          block2 = c("a", "b", "c", "abc"), value2 = c(0, -1, -1, 6),
+                          block3 = c(" ( 1 ) ", "c", "ab", "abc"), value3 = c(-1, 0, 3, 5),
+                          block4 = c("a", "b", "ac", "bc"), value4 = c(1, 0, 1, 1))
+options(knitr.table.format = "html") 
+kable(obser.table) %>% # col.names = rep(c("mean", "variance"),2), digits = 8
+        kable_styling(full_width = F, position = "left") %>%
+        kable_styling("striped") %>%
+        add_header_above(c( "Replicate I" = 4, "Replicate II" = 4))
+```
+## Find the confouned effects in replicate I and replicate II.
+
+* Equation method of finding the key block or confounded effects.
+
+If a treatment effect $A^{l_1}B^{l_2}\ldots N^{l_n}$ is confounded in a replicate then any treatment combination $a^{x_1}b^{x_2}\ldots n^{x_n}$ will belong to the key block if
+$$l_1x_1+l_2x_2+\ldots+l_nx_n = 0(mod 2)$$
+
+## Compute ANOVA table manually 
+
+1. [A], $SS_A$ (also B, C)
+2. [AC], $SS_{AC}$ (also BC)
+3. $SS_{ABC}$, rep2 only
+$$SS_{ABC} = \frac{([a] + [b] + [c] + [abc] - [1] - [ab] - [ac] - [bc])^2}{1*2^3} = \frac{(1+0+0+5-(-1)-3-1-1)^2}{8} = 0.5$$
+**Important Notes:** To determine the sign used in $SS_{ABC}$ computation, you can either (1) use sign table or (2) use the sign in replicate **I** (ie. block2 - block1), but the values should come from replicate **II**. 
+4. $SS_{AB}$, rep1 only
+5. $SS_{rep}$
+6. SS(blocks within replicates) = $SS_{blocks} - SS_{rep}$
+7. $SS_{total}$
+8. SSE by subtraction
+
+## Compute ANOVA table in R
+```{r}
+treat.combi <- expand.grid(A = c(-1, 1), B = c(-1, 1), C = c(-1, 1))
+beverage.rep1 <- data.frame(treat.combi, y = c(-3, 0, -1, 2, -1, 2, 1, 6))
+beverage.rep2 <- data.frame(treat.combi, y = c(-1, 1, 0, 3, 0, 1, 1, 5))
+beverage.treatment <- rbind(beverage.rep1, beverage.rep2)
+data.all <- data.frame(beverage.treatment,
+                       rep = rep(c(-1, 1), each = 8),
+                       block = c(1, 2, 2, 1, 2, 1, 1, 2, 3, 4, 4, 3, 3, 4, 4, 3))
+beverage.fit <- lm(y ~ A*B*C + rep + factor(block), data = data.all)
+anova(beverage.fit)
+```
+
+## Suitable model
+
+According to the Pvalues in the above ANOVA table, only main effects, A, B and C, are significant, we reduce the model to be
+
+$$y = \mu + A + B + C + \epsilon$$
+```{r}
+suitable.fit <- lm(y ~ A + B + C + rep + factor(block), data = data.all)
+anova(suitable.fit)
+```     

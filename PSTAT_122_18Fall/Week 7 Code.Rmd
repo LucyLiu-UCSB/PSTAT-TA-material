@@ -1,0 +1,179 @@
+---
+title: "Week 7 Code--two-way fixed/random/mixed effects ANOVA model"
+author: "Lucy Liu"
+date: "11/13/2018"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+# ANOVA table comparison
+
+| Sov      | df       | SS  | MS                            | fixed effects | Tabulated  | random effects  | Tabulated   | mixed effects  |Tabulated|
+| ----- |------------| ----| ---------                     |:-------------:| -----:| ------------- |:-------------:| -----:|-----:|
+|  A | a-1      | SSA | MSA=$\frac{SSA}{a-1}$         |  $F_A=\frac{MSA}{MSE}$   | $F_{(a-1),ab(n-1)}$ | $F_A=\frac{MSA}{MSAB}$   | $F_{(a-1),(a-1)(b-1)}$  | $F_A=\frac{MSA}{MSAB}$   | $F_{(a-1),(a-1)(b-1)}$  |
+|  B | b-1      | SSB | MSB=$\frac{SSB}{b-1}$         | $F_B=\frac{MSB}{MSE}$     | $F_{(b-1),ab(n-1)}$ | $F_B=\frac{MSB}{MSAB}$   | $F_{(b-1),(a-1)(b-1)}$  | $F_B=\frac{MSB}{MSE}$    | $F_{(b-1),ab(n-1)}$  |
+| A:B      |(a-1)(b-1)| SSAB| MSAB=$\frac{SSAB}{(a-1)(b-1)}$| $F_{AB}=\frac{MSAB}{MSE}$| $F_{(a-1)(b-1),ab(n-1)}$| $F_{AB}=\frac{MSAB}{MSE}$| $F_{(a-1)(b-1),ab(n-1)}$| $F_{AB}=\frac{MSAB}{MSE}$| $F_{(a-1)(b-1),ab(n-1)}$|
+|Error     | ab(n-1)  | SSE | MSE=$\frac{SSE}{ab(n-1)}$     | - | - | -                        |                         | - | - |
+|Total     | abn-1    | SST | -                             | - | -  | -                        |                         | - | - |
+
+# An example
+
+A manufacturer was developing a new spectrophotometer for medical labs. A critical issue is consistency of measurements from day to day among different machines. 4 machines were randomly selected from the production process and tested on 4 randomly selected days. Per day 8 serum samples were randomly assigned to the 4 machines (2 samples per machine). Response is the triglyceride level [mg/dl] of a sample.
+
+
+```{r}
+## Create data-set ####
+##     machine 1     machine 2     machine 3     machine 4
+y <- c(142.3, 144.0, 148.6, 146.9, 142.9, 147.4, 133.8, 133.2, ## day 1
+       134.9, 146.3, 145.2, 146.3, 125.9, 127.6, 108.9, 107.5, ## day 2
+       148.6, 156.5, 148.6, 153.1, 135.5, 138.9, 132.1, 149.7, ## day 3
+       152.0, 151.4, 149.7, 152.0, 142.9, 142.3, 141.7, 141.2) ## day 4
+
+twoway.df <- data.frame(y = y, 
+                        day = factor(rep(1:4, each = 8)),
+                        machine = factor(rep(rep(1:4, each = 2), 4)))
+
+# number of observations                                  
+xtabs(~ day + machine, data = twoway.df)
+```
+
+## Two-way fixed effects model
+
+$$Y_{ijk} = \mu + \tau_i + \beta_j + (\tau\beta)_{ij} + \epsilon_{ijk},\quad i = 1,2,3,4,\quad j = 1,2,3,4\quad k = 1,2$$
+
+where $\epsilon_{ijk}\sim N(0, \sigma^2).$
+
+**Parameters in the model:**
+
+* $\mu$ = overall mean
+* $\tau_i$ = main effect of machines
+* $\beta_j$ = main effect of days
+* $(\tau\beta)_{ij}$ = interaction effect due to combination (i,j) of the two factors
+* $\sigma^2$ = variance of random error
+
+### Estimation of Parameters 
+
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+lm.fit <- lm(y ~ machine*day, data = twoway.df)
+summary(lm.fit)
+```
+
+Check how to use sum-to-zero condition to get estimates of $\tau$, $\beta$ and $\tau\beta$ in Week 5 code.
+
+### ANOVA table
+```{r}
+(fixedTable <- anova(lm.fit))
+```
+
+## Random effects model
+
+$$Y_{ijk} = \mu + \tau_i + \beta_j + (\tau\beta)_{ij} + \epsilon_{ijk},\quad i = 1,2,3,4,\quad j = 1,2,3,4\quad k = 1,2$$
+
+where 
+
+* $\mu$ = overall mean
+* $\tau_i$ = main effect of machines $\sim N(0, \sigma_\tau^2)$
+* $\beta_j$ = main effect of days $\sim N(0, \sigma_\beta^2)$
+* $(\tau\beta)_{ij}$ = interaction effect due to combination (i,j) of the two factors $\sim N(0, \sigma_{\tau\beta}^2)$
+* $\sigma^2$ = variance of random error, $\epsilon_{ijk}\sim N(0, \sigma^2).$
+
+**Parameters in the model:**
+
+$$\mu, \sigma_\tau^2, \sigma_\beta^2, \sigma_{\tau\beta}^2, \sigma^2.$$
+
+
+### Estimation of Parameters 
+```{r}
+# install.packages("lme4")
+library(lme4)
+random.fit <- lmer(y ~ (1 | day) + (1 | machine) + (1 | machine:day), data = twoway.df)
+summary(random.fit)
+```
+
+* $\mu = 141.184$
+* $\sigma_\tau^2 = 57.72$
+* $\sigma_\beta^2 = 44.69$
+* $\sigma_{\tau\beta}^2 = 34.72$
+* $\sigma^2 = 17.90$
+
+
+### ANOVA table
+
+| Sov      | df       | SS  | MS                            | fixed effects | Tabulated  | random effects  | Tabulated   | 
+| ----- |------------| ----| ---------                     |:-------------:| -----:| ------------- |:-------------:| 
+|  A | a-1      | SSA | MSA=$\frac{SSA}{a-1}$         |  $F_A=\frac{MSA}{MSE}$   | $F_{(a-1),ab(n-1)}$ | $F_A=\frac{MSA}{MSAB}$   | $F_{(a-1),(a-1)(b-1)}$  | 
+|  B | b-1      | SSB | MSB=$\frac{SSB}{b-1}$         | $F_B=\frac{MSB}{MSE}$     | $F_{(b-1),ab(n-1)}$ | $F_B=\frac{MSB}{MSAB}$   | $F_{(b-1),(a-1)(b-1)}$  | 
+| A:B      |(a-1)(b-1)| SSAB| MSAB=$\frac{SSAB}{(a-1)(b-1)}$| $F_{AB}=\frac{MSAB}{MSE}$| $F_{(a-1)(b-1),ab(n-1)}$| $F_{AB}=\frac{MSAB}{MSE}$| $F_{(a-1)(b-1),ab(n-1)}$| 
+|Error     | ab(n-1)  | SSE | MSE=$\frac{SSE}{ab(n-1)}$     | - | - | -                        |                         | 
+|Total     | abn-1    | SST | -                             | - | -  | -                        |                         | 
+
+```{r}
+MSA <- fixedTable$`Mean Sq`[1]; df.msa <- fixedTable$Df[1]
+MSB <- fixedTable$`Mean Sq`[2]; df.msb <- fixedTable$Df[2]
+MSAB <- fixedTable$`Mean Sq`[3]; df.msab <- fixedTable$Df[3]
+MSE <- fixedTable$`Mean Sq`[4]; df.mse <- fixedTable$Df[4]
+randomTable <- fixedTable
+randomTable$`F value`[1:2] <- c(MSA/MSAB, MSB/MSAB)
+randomTable$`Pr(>F)`[1] <- pf(randomTable$`F value`[1], df1 = df.msa, df2 = df.msab, lower.tail = F)
+randomTable$`Pr(>F)`[2] <- pf(randomTable$`F value`[2], df1 = df.msb, df2 = df.msab, lower.tail = F)
+randomTable
+```
+
+## Mixed effects model
+
+$$Y_{ijk} = \mu + \tau_i + \beta_j + (\tau\beta)_{ij} + \epsilon_{ijk},\quad i = 1,2,3,4,\quad j = 1,2,3,4\quad k = 1,2$$
+
+where 
+
+* $\mu$ = overall mean
+* $\tau_i$ = main effect of machines, $i = 1,2,3,4, \sum \tau_i = 0$
+* $\beta_j$ = main effect of days $\sim N(0, \sigma_\beta^2)$
+* $(\tau\beta)_{ij}$ = interaction effect due to combination (i,j) of the two factors $\sim N(0, \frac{a-1}{a}\sigma_{\tau\beta}^2)$
+* $\sigma^2$ = variance of random error, $\epsilon_{ijk}\sim N(0, \sigma^2).$
+
+**Parameters in the model:**
+
+$$\mu, \tau_i (i = 1,2,3,4), \sigma_\beta^2, \sigma_{\tau\beta}^2, \sigma^2.$$
+
+### Estimation of Parameters 
+
+Suppose day is a random effect.
+
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+mixed.fit <- lmer(y ~ machine + (1 | day) + (1 | machine:day), data = twoway.df)#, REML=T)
+summary(mixed.fit)
+```
+
+* $\mu = 141.184$ 
+* $\tau_1 = 5.816, \tau_2 = 7.616, \tau_3 = -3.259, \tau_4 =  -(5.816+7.616-3.259) =-10.173$  
+* $\sigma_\beta^2 = 44.69$, but $\frac{MSB-MSE}{an} = 53.36573$ **???**
+* $\sigma_{\tau\beta}^2 = 34.72$
+* $\sigma^2 = 17.90$
+
+### ANOVA table
+
+
+| Sov      | df       | SS  | MS                            | fixed effects | Tabulated   | mixed effects  |Tabulated|
+| ----- |------------| ----| ---------                     |:-------------:| -----:| ------------- |:-------------:| -----:|-----:|
+|  A | a-1      | SSA | MSA=$\frac{SSA}{a-1}$         |  $F_A=\frac{MSA}{MSE}$   | $F_{(a-1),ab(n-1)}$  | $F_A=\frac{MSA}{MSAB}$   | $F_{(a-1),(a-1)(b-1)}$  |
+|  B | b-1      | SSB | MSB=$\frac{SSB}{b-1}$         | $F_B=\frac{MSB}{MSE}$     | $F_{(b-1),ab(n-1)}$  | $F_B=\frac{MSB}{MSE}$    | $F_{(b-1),ab(n-1)}$  |
+| A:B      |(a-1)(b-1)| SSAB| MSAB=$\frac{SSAB}{(a-1)(b-1)}$| $F_{AB}=\frac{MSAB}{MSE}$| $F_{(a-1)(b-1),ab(n-1)}$| $F_{AB}=\frac{MSAB}{MSE}$| $F_{(a-1)(b-1),ab(n-1)}$|
+|Error     | ab(n-1)  | SSE | MSE=$\frac{SSE}{ab(n-1)}$     | - | - | -                        |                         | 
+|Total     | abn-1    | SST | -                             | - | -  | -                        |                         | 
+
+```{r}
+mixedTable <- fixedTable
+mixedTable$`F value`[1:2] <- c(MSA/MSAB, MSB/MSE)
+mixedTable$`Pr(>F)`[1] <- pf(mixedTable$`F value`[1], df1 = df.msa, df2 = df.msab, lower.tail = F)
+mixedTable$`Pr(>F)`[2] <- pf(mixedTable$`F value`[2], df1 = df.msb, df2 = df.mse, lower.tail = F)
+mixedTable
+```
+

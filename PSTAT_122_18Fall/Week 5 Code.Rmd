@@ -1,0 +1,114 @@
+---
+title: "Week 5 Code--General two-way ANOVA model"
+author: "Lucy Liu"
+date: "10/29/2018"
+output: 
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(knitr)
+library(kableExtra)
+library(tibble)
+library(dplyr)
+reaction.df <- read.table("reaction.time.txt", header = T) %>% 
+        as.tibble() %>%
+        mutate_at(.vars = vars(Trtmt:B), .funs = as.factor) %>%
+        select(-Order, -Trtmt) 
+names(reaction.df) <- c("Simulus", "ElapsedTime", "ReactionTime")
+reaction.df
+```
+
+# General two-way ANOVA model
+
+$$Y_{ijk} = \mu + \alpha_i + \beta_j + (\alpha\beta)_{ij} + \epsilon_{ijk},\quad i = 1,2,\quad j = 1,2,3,\quad k = 1,2,3$$
+where $\epsilon_{ijk}\sim N(0, \sigma^2).$
+
+**Parameters in the model:**
+
+* $\mu$ = overall mean
+* $\alpha_i$ = main effect of ith cue stimulus
+* $\beta_j$ = main effect of jth  elapsed time
+* $(\alpha\beta)_{ij}$ = interaction effect due to combination (i,j) of the two factors
+* $\sigma^2$ = variance of random error
+
+## Estimation of Parameters 
+
+```{r}
+options(contrasts=c("contr.sum","contr.poly"))
+lm.fit <- lm(ReactionTime ~ Simulus*ElapsedTime, data = reaction.df)
+summary(lm.fit)
+```
+
+## ANOVA table
+
+```{r}
+aov.fit <- aov(ReactionTime ~ Simulus*ElapsedTime, data = reaction.df)
+summary(aov.fit)
+```
+
+**Interpretation: **
+
+Test for interaction effects of Stimulus and ElapsedTime:
+
+* $H_{0AB}: (\alpha\beta)_{ij} = 0$ for all i,j
+* $F_{obs} = 1.463$
+* Pvalue =  0.270 > 0.05
+* Fail to reject $H_{0AB}$ => reduce the model to only include two main effects => continue your analysis in LabA Q3(g).
+
+# Compute by hand
+
+Use the following quantities, continue to calculate the estimate of parameters, SS and MSE. Solutions  will be shown on board.
+
+```{r}
+(mu.hat <- mean(reaction.df$ReactionTime)) # overall mean y_{...}
+(y_i.. <- reaction.df %>%  # y_{i..}
+        group_by(Simulus) %>%
+        summarise(ReactionTime_mean = mean(ReactionTime))) 
+(y_.j. <- reaction.df %>%
+        group_by(ElapsedTime) %>%
+        summarise(ReactionTime_mean = mean(ReactionTime))) # y_{.j.}
+y_ij._var <- reaction.df %>%
+        group_by(Simulus, ElapsedTime) %>%
+        summarise(ReactionTime_mean = mean(ReactionTime), ReactionTime_var = var(ReactionTime))
+mean_varTB <- data.frame(df1 = y_ij._var[1:3, 3:4], df2 = y_ij._var[4:6, 3:4]) 
+rownames(mean_varTB) = c("ElapsedTime1","ElapsedTime2","ElapsedTime3")
+
+options(knitr.table.format = "html") 
+kable(mean_varTB, col.names = rep(c("mean", "variance"),2), digits = 8) %>%
+        kable_styling(full_width = F, position = "left") %>%
+        kable_styling("striped") %>%
+        add_header_above(c(" " = 1, "Simulus 1" = 2, "Simulus 2" = 2))
+```
+
+
+
+
+## Estimation of parameters
+
+
+## ANOVA table
+```{r}
+cat("Also given SS_{total} is ",  var(reaction.df$ReactionTime)*(nrow(reaction.df)-1))
+```
+
+## Draw interaction plots
+
+## Contrasts ( Bonferroni correction method)
+
+Assume the interaction term is significant and we are interested in `Simulus` effect. Therefore, we need to construct CI at three levels of `ElapsedTime`.
+
+Will be shown on board.
+```{r}
+qt(p = 1 - 0.05/2/3, df = 12) # W_{B}
+MSE <- sum(aov.fit$residuals^2)/12
+sqrt(2 * MSE/3)
+```
+
+# Q&A in LabA
